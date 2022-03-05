@@ -87,8 +87,33 @@ public class SellerDaoJDBC implements SellerDao {
 
 	@Override
 	public List<Seller> findAll() {
-		// TODO Auto-generated method stub
-		return null;
+		PreparedStatement sql = null;
+		ResultSet rs = null;
+		try {
+			sql = conn.prepareStatement("SELECT seller.*,department.Name as DepName\r\n"
+					+ "FROM seller INNER JOIN department\r\n"
+					+ "ON seller.DepartmentId = department.Id\r\n"
+					+ "ORDER BY Name");
+			rs = sql.executeQuery();
+			List<Seller> list = new ArrayList<Seller>();
+			Map<Integer, Department> map = new HashMap<Integer,Department>();
+			while(rs.next()) {
+				Department dep = map.get(rs.getInt("DepartmentId"));
+				if(dep == null) {
+					dep = instateateDepartment(rs);
+					map.put(rs.getInt("DepartmentId"),dep);
+				}
+				Seller seller = instateateSeller(rs, dep);
+				list.add(seller);
+			}
+			return list;
+			
+		}catch(Exception e) {
+			throw new DbException(e.getMessage());
+		}finally {
+			DB.closeStatement(sql);
+			DB.closeResultSet(rs);
+		}
 	}
 
 	@Override
@@ -96,26 +121,23 @@ public class SellerDaoJDBC implements SellerDao {
 		PreparedStatement sql = null;
 		ResultSet rs = null;
 		try {
-			sql = conn.prepareStatement(
-					"SELECT seller.*,department.Name as DepName\r\n"
-					+ "FROM seller INNER JOIN department\r\n"
-					+ "ON seller.DepartmentId = department.Id\r\n"
-					+ "WHERE DepartmentId = ?\r\n"
-					+ "ORDER BY Name");
-			sql.setInt(1,department.getId());
+			sql = conn.prepareStatement("SELECT seller.*,department.Name as DepName\r\n"
+					+ "FROM seller INNER JOIN department\r\n" + "ON seller.DepartmentId = department.Id\r\n"
+					+ "WHERE DepartmentId = ?\r\n" + "ORDER BY Name");
+			sql.setInt(1, department.getId());
 			rs = sql.executeQuery();
 			List<Seller> list = new ArrayList<Seller>();
-			Map<Integer,Department> map = new HashMap<Integer, Department>();
-			while(rs.next()) {
+			Map<Integer, Department> map = new HashMap<Integer, Department>();
+			while (rs.next()) {
 				Department dep = map.get(rs.getInt("DepartmentId"));
-				if(dep == null) {
+				if (dep == null) {
 					dep = instateateDepartment(rs);
 					map.put(rs.getInt("DepartmentId"), dep);
 				}
 				Seller seller = instateateSeller(rs, dep);
-				
+
 				list.add(seller);
-				
+
 			}
 			return list;
 		} catch (Exception e) {
